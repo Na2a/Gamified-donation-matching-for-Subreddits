@@ -1,14 +1,17 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Card } from "antd";
-import { useContractLoader, useContractExistsAtAddress, useContractReader } from "../hooks";
+import { useContractLoader, useContractExistsAtAddress, useContractReader, useCustomContractLoader } from "../hooks";
 import Account from "./Account";
 import DisplayVariable from "./Contract/DisplayVariable";
 import FunctionForm from "./Contract/FunctionForm";
 import Address from "./Address";
-import { Row, Col, Divider, Skeleton } from "antd";
+import { Row, Col, Divider, Skeleton, Button } from "antd";
 import { Transactor } from "../helpers";
 import tryToDisplay from "./Contract/utils";
 import { formatUnits } from "@ethersproject/units";
+import Popup from "reactjs-popup";
+import Project from "./Project";
+import AddProject from "./AddProject";
 
 const noContractDisplay = (
   <div>
@@ -29,7 +32,7 @@ const noContractDisplay = (
 
 const isQueryable = fn => (fn.stateMutability === "view" || fn.stateMutability === "pure") && fn.inputs.length === 0;
 
-export default function MainContract({ account, gasPrice, provider, price }) {
+export default function MainContract({ account, gasPrice, provider, price, getFromIPFS, addToIPFS }) {
   const contracts = useContractLoader(provider);
   const contract = contracts ? contracts["MainContract"] : "";
   const address = contract ? contract.address : "";
@@ -49,7 +52,6 @@ export default function MainContract({ account, gasPrice, provider, price }) {
       let np = projects ? projects.slice() : [];
       for (let i = projects ? projects.length : 0; i < numberOfProjects; i++)
         np.push(await contract.getProjectInfoById(i));
-      console.log("UPD", np);
       setProjects(np);
     } catch (e) {
       console.log(e);
@@ -68,26 +70,6 @@ export default function MainContract({ account, gasPrice, provider, price }) {
 
   const contractDisplay = useMemo(() => {
     if (contract) {
-      console.log(contract);
-      /*return Object.values(contract.interface.functions)
-        .filter(fn => fn.type === "function")
-        .map(fn => {
-          if (isQueryable(fn)) {
-            // If there are no inputs, just display return value
-            return <DisplayVariable key={fn.name} contractFunction={contract[fn.name]} functionInfo={fn} />;
-          }
-          // If there are inputs, display a form to allow users to provide these
-          return (
-            <FunctionForm
-              key={fn.name}
-              contractFunction={contract[fn.name]}
-              functionInfo={fn}
-              provider={provider}
-              gasPrice={gasPrice}
-            />
-          );
-        });*/
-
         return (
           <div>
             <Row>
@@ -166,55 +148,25 @@ export default function MainContract({ account, gasPrice, provider, price }) {
             </Row>
             <Divider />
 
-            <Row>
-              <Col
-                span={8}
-                style={{
-                  textAlign: "right",
-                  opacity: 0.333,
-                  paddingRight: 6,
-                  fontSize: 24,
-                }}
-              >
-                Projects
-              </Col>
-              <Col span={14} style={{
-                textAlign: "left",
-                fontSize: 20,
-              }}>
-                {projects.map((p, id) => (
-                  <Row>
-                  <ul>
-                    <li><b>Name: </b> {p[0]}</li>
-                    <li><b>Desc: </b> {p[1]}</li>
-                    <li><b>By: </b> {p[2]}</li>
-                    <li>
-                      <b>Donated: </b> {formatUnits(p[3], "ether")} tokens & {formatUnits(p[4], "ether")} ether
-                      <a href="#" onClick={() => {refreshProject(id)}}>
-                         🔄
-                      </a>
-                    </li>
-                  </ul>
-                    <Divider/>
-                  </Row>
-                ))}
-              </Col>
-            </Row>
-            <Divider />
+            {[...Array(numberOfProjects).keys()].map(id =>
+              <Project
+                contract={contract}
+                id={id}
+                gasPrice={gasPrice}
+                provider={provider}
+                mainContractAddress={address}
+                tokenContractAddress={tokenAddress}
+                getFromIPFS={getFromIPFS}
+              />
+            )}
 
-            <FunctionForm
-              key={"addProject"}
-              contractFunction={contract["addProject"]}
-              functionInfo={Object.values(contract.interface.functions).find(x => x.name == "addProject")}
-              provider={provider}
-              gasPrice={gasPrice}
-            />
+            <AddProject provider={provider} contract={contract} gasPrice={gasPrice} addToIPFS={addToIPFS}/>
 
           </div>
         )
     }
     return <div />;
-  }, [contract, gasPrice, provider, ownerAddress, tokenAddress, numberOfProjects, projects]);
+  }, [contract, gasPrice, provider, ownerAddress, tokenAddress, numberOfProjects, projects, totalEth, totalTokens]);
 
   return (
     <div style={{ margin: "auto", width: "70vw" }}>

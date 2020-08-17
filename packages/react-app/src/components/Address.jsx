@@ -20,7 +20,7 @@ export default function Address(props) {
 
   let displayAddress = props.value.substr(0, 6);
 
-  if (ens) {
+  if (ens && !props.noEns) {
     displayAddress = ens;
   } else if (props.size === "short") {
     displayAddress += "..." + props.value.substr(-4);

@@ -11,6 +11,29 @@ import { Header, Account, Faucet, Ramp, Contract, MainContract } from "./compone
 import Hints from "./Hints";
 import { INFURA_ID } from "./constants";
 import { TokenBalance } from "./components";
+const { BufferList } = require('bl')
+
+const ipfsAPI = require('ipfs-http-client');
+const ipfs = ipfsAPI({host: 'ipfs.infura.io', port: '5001', protocol: 'https' })
+
+const getFromIPFS = async hashToGet => {
+  for await (const file of ipfs.get(hashToGet)) {
+    console.log(file.path)
+    if (!file.content) continue;
+    const content = new BufferList()
+    for await (const chunk of file.content) {
+      content.append(chunk)
+    }
+    console.log(content)
+    return content
+  }
+}
+
+const addToIPFS = async fileToUpload => {
+  for await (const result of ipfs.add(fileToUpload)) {
+    return result
+  }
+}
 
 const web3Modal = new Web3Modal({
   // network: "mainnet", // optional
@@ -73,7 +96,7 @@ function App() {
     <div className="App">
       <Header />
 
-      <div style={{ position: "fixed", border: "1px dashed gray", zIndex: 1000, backgroundColor: "white", textAlign: "right", right: 0, top: 0, padding: 10 }}>
+      <div style={{ position: "fixed", border: "1px dashed gray", zIndex: 100, backgroundColor: "white", textAlign: "right", right: 0, top: 0, padding: 10 }}>
         <Account
           address={address}
           localProvider={localChainProvider}
@@ -95,9 +118,9 @@ function App() {
           and give you a form to interact with it locally
       */}
 
-      <MainContract provider={userProvider} address={address} />
+      <MainContract provider={userProvider} address={address} getFromIPFS={getFromIPFS} addToIPFS={addToIPFS} />
 
-      <Contract show={["transferAndCall"]} name="ERC677" provider={userProvider} address={address} />
+      <Contract show={[]} name="ERC677" provider={userProvider} address={address} />
 
       {
         //<Hints address={address} yourLocalBalance={yourLocalBalance} price={price} mainnetProvider={mainnetProvider} />

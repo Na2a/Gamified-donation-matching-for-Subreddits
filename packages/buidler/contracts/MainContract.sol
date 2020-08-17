@@ -11,7 +11,7 @@ contract MainContract {
 
   struct Project {
     string title;
-    string description;
+    string ipfsHash;
     address sender;
   }
 
@@ -46,23 +46,24 @@ contract MainContract {
     tokenAddress = addr;
   }
 
-  function numberOfProjects() public view returns (uint) {
-    return projects.length;
+  function numberOfProjects() public view returns (uint32) {
+    return uint32(projects.length);
   }
 
-  function getProjectInfoById(uint32 id) public view returns (string memory, string memory, address, uint, uint) {
+  function getProjectInfoById(uint32 id) public view returns (string memory, string memory, address, uint, uint, uint32) {
     require(id >= 0 && id < projects.length, "The project with given id doesnt exist");
     return (
       projects[id].title,
-      projects[id].description,
+      projects[id].ipfsHash,
       projects[id].sender,
       tokensDonated[id],
-      ethDonated[id]
+      ethDonated[id],
+      uint32(tokenDonations[id].length)
     );
   }
 
-  function addProject(string calldata title, string calldata description) external {
-    projects.push(Project(title, description, msg.sender));
+  function addProject(string calldata title, string calldata ipfsHash) external {
+    projects.push(Project(title, ipfsHash, msg.sender));
   }
 
   function tokenFallback(address from, uint256 amount, bytes calldata data) external returns (bool) {
